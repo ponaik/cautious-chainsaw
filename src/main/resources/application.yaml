@@ -12,10 +12,22 @@ spring:
       server:
         webflux:
           routes:
-          - id: after_route
-            uri: https://example.org
+          - id: test
+            uri: http://localhost:8080/
             predicates:
-              - Cookie=mycookie,mycookievalue
+              - Path=/api/users/{id}
+
+network:
+  user-service:
+    base-url: ${USERSERVICE_BASEURL}
+  auth-service:
+    base-url: ${KEYCLOAK_BASEURL}
+    service-client:
+      id: ${GATEWAY_CLIENT_ID}
+      secret: ${GATEWAY_CLIENT_SECRET}
+    authentication-client:
+      id: ${AUTH_CLIENT_ID}
+      secret: ${AUTH_CLIENT_SECRET}
 
 management:
   endpoints:
@@ -27,4 +39,11 @@ management:
       access: read-only
 
 server:
-  port: 8080
+  port: 8081
+  error:
+    include-message: always
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: INFO
+    reactor.netty: INFO

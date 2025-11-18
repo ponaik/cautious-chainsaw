@@ -1,0 +1,33 @@
+{
+  "properties": [
+    {
+      "name": "network.user-service.base-url",
+      "type": "java.lang.String",
+      "description": "Description for network.user-service.base-url."
+    },
+    {
+      "name": "network.auth-service.base-url",
+      "type": "java.lang.String",
+      "description": "Description for network.auth-service.base-url."
+    },
+    {
+      "name": "network.auth-service.service-client.id",
+      "type": "java.lang.String",
+      "description": "Description for network.auth-service.service-client.id."
+    },
+    {
+      "name": "network.auth-service.service-client.secret",
+      "type": "java.lang.String",
+      "description": "Description for network.auth-service.service-client.secret."
+    },
+    {
+      "name": "network.auth-service.authentication-client.id",
+      "type": "java.lang.String",
+      "description": "Description for network.auth-service.authentication-client.id."
+    },
+    {
+      "name": "network.auth-service.authentication-client.secret",
+      "type": "java.lang.String",
+      "description": "Description for network.auth-service.authentication-client.secret."
+    }
+  ] }
