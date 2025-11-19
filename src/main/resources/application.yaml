@@ -12,10 +12,42 @@ spring:
       server:
         webflux:
           routes:
-          - id: test
-            uri: http://localhost:8080/
-            predicates:
-              - Path=/api/users/{id}
+            # UserService routes
+            - id: userservice-users
+              uri: ${USERSERVICE_BASEURL}
+              predicates:
+                - Path=/api/users/**
+
+            - id: userservice-cards
+              uri: ${USERSERVICE_BASEURL}
+              predicates:
+                - Path=/api/cards/**
+
+            # OrderService routes
+            - id: orderservice
+              uri: ${ORDERSERVICE_BASEURL}
+              predicates:
+                - Path=/api/orders/**
+
+            - id: orderservice-open-api
+              uri: ${ORDERSERVICE_BASEURL}
+              predicates:
+                - Path=/orders/v3/api-docs
+              filters:
+                - StripPrefix=1
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - name: gateway-service
+        url: /v3/api-docs
+      - name: order-service
+        url: /orders/v3/api-docs
 
 network:
   user-service:
@@ -42,8 +74,11 @@ server:
   port: 8081
   error:
     include-message: always
+
+
 logging:
   level:
+    com.intern.gateway.client: DEBUG
     org.springframework.cloud.gateway: DEBUG
     org.springframework.web.reactive: INFO
     reactor.netty: INFO
