@@ -2,6 +2,7 @@ package com.intern.gateway.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.intern.gateway.dto.UserRegistrationRequest;
+import com.intern.gateway.exception.UserRegistrationException;
 import com.intern.gateway.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -63,7 +65,8 @@ public class KeycloakAdminClient {
                         ))
                         .retrieve()
                         .toBodilessEntity()
-//                        .onErrorResume(ex -> ex.printStackTrace());
+                        .onErrorResume(WebClientResponseException.class, err ->
+                                Mono.error(new UserRegistrationException(err)))
                 );
     }
 

@@ -1,5 +1,6 @@
 package com.intern.gateway.controller;
 
+import com.intern.gateway.dto.LoginResponse;
 import com.intern.gateway.dto.UserLoginRequest;
 import com.intern.gateway.dto.UserRegistrationRequest;
 import com.intern.gateway.service.GatewayService;
@@ -29,7 +30,7 @@ public class GatewayController {
     }
 
     @PostMapping("/login")
-    public Mono<ResponseEntity<String>> login(@RequestBody UserLoginRequest request) {
+    public Mono<ResponseEntity<LoginResponse>> login(@RequestBody UserLoginRequest request) {
         return gatewayService.loginUser(request)
                 .map(token ->  ResponseEntity.ok().body(token));
     }
