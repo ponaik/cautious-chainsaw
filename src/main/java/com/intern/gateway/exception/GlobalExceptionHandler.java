@@ -3,6 +3,7 @@ package com.intern.gateway.exception;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intern.gateway.dto.ErrorResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.annotation.Order;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 
 @Component
 @Order(-2)
+@Slf4j
 public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
     private final ObjectMapper objectMapper;
@@ -39,7 +41,8 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         } else {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
             message = "Unexpected error";
-            details = ex.getMessage();
+            details = "\"\"";
+            log.error("Unexpected error: {}", ex.getMessage());
         }
 
         ErrorResponse errorResponse = new ErrorResponse(

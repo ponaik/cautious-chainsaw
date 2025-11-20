@@ -36,6 +36,10 @@ spring:
               filters:
                 - StripPrefix=1
 
+swagger-ui:
+  oauth:
+    issuer-uri: ${OAUTH_ISSUER_URI}
+
 springdoc:
   api-docs:
     enabled: true

@@ -3,31 +3,37 @@
     {
       "name": "network.user-service.base-url",
       "type": "java.lang.String",
-      "description": "Description for network.user-service.base-url."
+      "description": "Base URL for User Service."
     },
     {
       "name": "network.auth-service.base-url",
       "type": "java.lang.String",
-      "description": "Description for network.auth-service.base-url."
+      "description": "Base URL for Auth Service."
     },
     {
       "name": "network.auth-service.service-client.id",
       "type": "java.lang.String",
-      "description": "Description for network.auth-service.service-client.id."
+      "description": "Service Client ID for Auth Service."
     },
     {
       "name": "network.auth-service.service-client.secret",
       "type": "java.lang.String",
-      "description": "Description for network.auth-service.service-client.secret."
+      "description": "Service Client Secret for Auth Service."
     },
     {
       "name": "network.auth-service.authentication-client.id",
       "type": "java.lang.String",
-      "description": "Description for network.auth-service.authentication-client.id."
+      "description": "Authentication Client ID for Auth Service."
     },
     {
       "name": "network.auth-service.authentication-client.secret",
       "type": "java.lang.String",
-      "description": "Description for network.auth-service.authentication-client.secret."
+      "description": "Authentication Client Secret for Auth Service."
+    },
+    {
+      "name": "swagger-ui.oauth.issuer-uri",
+      "type": "java.lang.String",
+      "description": "OAuth Issuer URI for Swagger UI."
     }
-  ] }
+  ]
+}

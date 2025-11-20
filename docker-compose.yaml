@@ -1,0 +1,163 @@
+services:
+  keycloak-postgres:
+    image: postgres:18-alpine
+    user: postgres
+    volumes:
+      - keycloak_postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_POSTGRES_DB}
+      POSTGRES_USER: ${KEYCLOAK_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD}
+    networks:
+      - keycloak_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.2
+    command: start-dev
+    environment:
+#      KC_HOSTNAME: keycloak.test.com
+
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/${KEYCLOAK_POSTGRES_DB}
+      KC_DB_USERNAME: ${KEYCLOAK_POSTGRES_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD}
+      KC_HEALTH_ENABLED: true
+    expose:
+      - 8080
+    ports:
+      - "8000:8080"
+    depends_on:
+      - keycloak-postgres
+    networks:
+      - keycloak_network
+      - default
+
+  gateway:
+    image: ponaik/gateway:latest
+    ports:
+      - "8080:8081"
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${OAUTH_ISSUER_URI}
+
+      # Gateway routes
+      USERSERVICE_BASEURL: http://userservice:8080
+      ORDERSERVICE_BASEURL: http://orderservice:8082
+
+      # Network service URLs
+      NETWORK_AUTH_SERVICE_BASE_URL: http://keycloak:8080
+
+      # Auth service clients
+      NETWORK_AUTH_SERVICE_SERVICE_CLIENT_ID: ${GATEWAY_CLIENT_ID}
+      NETWORK_AUTH_SERVICE_SERVICE_CLIENT_SECRET: ${GATEWAY_CLIENT_SECRET}
+      NETWORK_AUTH_SERVICE_AUTHENTICATION_CLIENT_ID: ${AUTH_CLIENT_ID}
+      NETWORK_AUTH_SERVICE_AUTHENTICATION_CLIENT_SECRET: ${AUTH_CLIENT_SECRET}
+
+      SWAGGER-UI_AUTHORIZATION_ISSUER-URI: http://localhost:8000/realms/UserService
+    depends_on:
+      orderservice:
+        condition: service_started
+      keycloak:
+        condition: service_started
+      userservice:
+        condition: service_started
+
+  userservice:
+    image: userservice-userservice:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://userservice-postgres:5432/${USERSERVICE_DB_SCHEMA}
+      SPRING_DATASOURCE_USERNAME: ${USERSERVICE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${USERSERVICE_DB_PASS}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: ${USERSERVICE_REDIS_PORT}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${OAUTH_ISSUER_URI}
+    expose:
+      - 8080
+    ports:
+      - "8180:8080"
+    depends_on:
+      userservice-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      keycloak:
+        condition: service_started
+
+  userservice-postgres:
+    image: postgres:18-alpine
+    user: postgres
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${USERSERVICE_DB_SCHEMA}
+      - POSTGRES_USER=${USERSERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${USERSERVICE_DB_PASS}
+    expose:
+      - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${USERSERVICE_DB_USER}", "-d", "${USERSERVICE_DB_SCHEMA}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8.2.2-alpine
+    expose:
+      - ${USERSERVICE_REDIS_PORT}
+    volumes:
+      - redis-data:/data
+
+  orderservice:
+    #    build:
+    #      context: .
+    image: ponaik/orderservice:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://orderservice-postgres:5432/${ORDERSERVICE_DB_SCHEMA}
+      SPRING_DATASOURCE_USERNAME: ${ORDERSERVICE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ORDERSERVICE_DB_PASS}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${OAUTH_ISSUER_URI}
+      USERSERVICE_BASEURL: ${USERSERVICE_BASEURL}
+      SWAGGER-UI_AUTHORIZATION_ISSUER-URI: http://localhost:8000/realms/UserService
+    expose:
+      - 8082
+    ports:
+      - "8280:8082"
+    depends_on:
+      orderservice-postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+
+  orderservice-postgres:
+    image: postgres:18-alpine
+    user: postgres
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${ORDERSERVICE_DB_SCHEMA}
+      - POSTGRES_USER=${ORDERSERVICE_DB_USER}
+      - POSTGRES_PASSWORD=${ORDERSERVICE_DB_PASS}
+    expose:
+      - 5432
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${ORDERSERVICE_DB_USER}", "-d", "${ORDERSERVICE_DB_SCHEMA}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  keycloak_postgres_data:
+    name: keycloak_postgres_data
+    driver: local
+  order-db-data:
+    name: order-db-data
+  user-db-data:
+    name: user-db-data
+  redis-data:
+    name: redis-data
+
+networks:
+  keycloak_network:
+    driver: bridge

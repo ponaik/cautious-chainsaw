@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/swagger-ui/**").permitAll()
-                        .pathMatchers("/v3/api-docs/**").permitAll()
+                        .pathMatchers("/v3/api-docs/**", "/orders/v3/api-docs").permitAll()
                         .pathMatchers("/login", "/register").permitAll()
                         .anyExchange().authenticated()
                 )
