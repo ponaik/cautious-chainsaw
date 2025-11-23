@@ -2,7 +2,6 @@ package com.intern.gateway.client;
 
 import com.intern.gateway.dto.UserRegistrationRequest;
 import com.intern.gateway.dto.UserResponse;
-import com.intern.gateway.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -16,14 +15,11 @@ import java.util.Map;
 public class UserServiceClient {
 
     private final WebClient webClient;
-    private final JwtUtil jwtUtil;
 
     @Autowired
     public UserServiceClient(@Value("${network.user-service.base-url}") String userserviceBaseUrl,
-                             WebClient.Builder builder,
-                             JwtUtil jwtUtil) {
+                             WebClient.Builder builder) {
         this.webClient = builder.baseUrl(userserviceBaseUrl).build();
-        this.jwtUtil = jwtUtil;
     }
 
     public Mono<UserResponse> saveProfile(String sub, String token, UserRegistrationRequest request) {

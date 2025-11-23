@@ -6,7 +6,6 @@ import com.intern.gateway.dto.LoginResponse;
 import com.intern.gateway.dto.UserLoginRequest;
 import com.intern.gateway.dto.UserRegistrationRequest;
 import com.intern.gateway.dto.UserResponse;
-import com.intern.gateway.exception.PostRegistrationAuthenticationException;
 import com.intern.gateway.exception.UserAuthenticationException;
 import com.intern.gateway.exception.UserServiceSaveProfileException;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -6,7 +6,6 @@ import com.intern.gateway.dto.UserResponse;
 import com.intern.gateway.exception.KeycloakInternalIdAssignmentException;
 import com.intern.gateway.exception.PostRegistrationAuthenticationException;
 import com.intern.gateway.exception.UserRegistrationException;
-import com.intern.gateway.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +30,6 @@ public class KeycloakAdminClient {
     private final String serviceClientId;
     private final String serviceClientSecret;
     private final WebClient webClient;
-    private final JwtUtil jwtUtil;
 
     @Autowired
     public KeycloakAdminClient(@Value("${network.auth-service.authentication-client.id}") String authClientId,
@@ -39,14 +37,12 @@ public class KeycloakAdminClient {
                                @Value("${network.auth-service.service-client.id}") String serviceClientId,
                                @Value("${network.auth-service.service-client.secret}") String serviceClientSecret,
                                @Value("${network.auth-service.base-url}") String baseUrl,
-                               WebClient.Builder builder,
-                               JwtUtil jwtUtil) {
+                               WebClient.Builder builder) {
         this.authClientSecret = authClientSecret;
         this.authClientId = authClientId;
         this.serviceClientId = serviceClientId;
         this.serviceClientSecret = serviceClientSecret;
         this.webClient = builder.baseUrl(baseUrl).build();
-        this.jwtUtil = jwtUtil;
     }
 
     public Mono<ResponseEntity<Void>> createUser(UserRegistrationRequest request) {
