@@ -5,6 +5,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class PostRegistrationAuthenticationException extends WebClientException {
 
     public PostRegistrationAuthenticationException(WebClientResponseException cause) {
-        super("Failed to authenticate user in Keycloak after registration", cause);
+        super("Failed to request User sub by username in Keycloak after registration", cause);
     }
 }

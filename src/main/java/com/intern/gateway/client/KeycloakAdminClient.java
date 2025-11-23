@@ -2,6 +2,9 @@ package com.intern.gateway.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.intern.gateway.dto.UserRegistrationRequest;
+import com.intern.gateway.dto.UserResponse;
+import com.intern.gateway.exception.KeycloakInternalIdAssignmentException;
+import com.intern.gateway.exception.PostRegistrationAuthenticationException;
 import com.intern.gateway.exception.UserRegistrationException;
 import com.intern.gateway.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -65,23 +68,69 @@ public class KeycloakAdminClient {
                         ))
                         .retrieve()
                         .toBodilessEntity()
+//                        .map(response -> response.getHeaders().getLocation().toString())
                         .onErrorResume(WebClientResponseException.class, err ->
                                 Mono.error(new UserRegistrationException(err)))
                 );
     }
 
-    public Mono<ResponseEntity<Void>> rollbackUser(String userToken) {
+    public Mono<String> getUserSubByUsername(String username) {
         return getAdminToken()
-                .flatMap(token -> jwtUtil.getSubject(userToken)
-                        .flatMap(sub -> {
-                            log.debug("Executing rollback for user {}", sub);
-                            return webClient.delete()
-                                    .uri("/admin/realms/UserService/users/{id}", sub)
-                                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                                    .retrieve()
-                                    .toBodilessEntity();
-                        })
-                );
+                .flatMap(token ->
+                        webClient.get()
+                                .uri("/admin/realms/UserService/users?username={username}", username)
+                                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                                .retrieve()
+                                .bodyToMono(JsonNode.class)
+                                .map(json -> json.get(0).get("id").asText())
+                )
+                .doOnError(err -> log.error("Failed to request User sub by username after registration: {}", err.getMessage()))
+                .onErrorResume(WebClientResponseException.class, err ->
+                        Mono.error(new PostRegistrationAuthenticationException(err)));
+
+    }
+
+    public Mono<UserResponse> addInternalId(
+            UserResponse userResponse,
+            UserRegistrationRequest request,
+            String sub) {
+
+        return getAdminToken().flatMap(token ->
+                webClient.put()
+                        .uri("/admin/realms/UserService/users/{id}", sub)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .bodyValue(Map.of(
+                                "username", request.username(),
+                                "email", request.email(),
+                                "firstName", request.name(),
+                                "lastName", request.surname(),
+                                "enabled", true,
+                                "attributes", Map.of("internalId", userResponse.id()),
+                                "credentials", List.of(Map.of(
+                                        "type", "password",
+                                        "value", request.password(),
+                                        "temporary", false
+                                ))
+                        ))
+                        .retrieve()
+                        .toBodilessEntity()
+                        .onErrorResume(WebClientResponseException.class, err ->
+                                Mono.error(new KeycloakInternalIdAssignmentException(err)))
+
+                        .thenReturn(userResponse)
+        );
+    }
+
+    public Mono<ResponseEntity<Void>> rollbackUserBySub(String sub) {
+        return getAdminToken()
+                .flatMap(token -> {
+                    log.debug("Executing rollback for user {}", sub);
+                    return webClient.delete()
+                            .uri("/admin/realms/UserService/users/{id}", sub)
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .retrieve()
+                            .toBodilessEntity();
+                });
     }
 
     public Mono<String> authenticateUser(String username, String password) {
@@ -98,7 +147,7 @@ public class KeycloakAdminClient {
                 .map(json -> json.get("access_token").asText());
     }
 
-    private Mono<String> getAdminToken() {
+    public Mono<String> getAdminToken() {
         return webClient.post()
                 .uri("/realms/UserService/protocol/openid-connect/token")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)

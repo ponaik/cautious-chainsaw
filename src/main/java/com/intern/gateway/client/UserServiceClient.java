@@ -26,22 +26,20 @@ public class UserServiceClient {
         this.jwtUtil = jwtUtil;
     }
 
-    public Mono<UserResponse> saveProfile(String token, UserRegistrationRequest request) {
-        return jwtUtil.getSubject(token)
-                .flatMap(sub -> webClient.post()
-                        .uri("/api/users")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                        .bodyValue(Map.of(
-                                "username", request.username(),
-                                "email", request.email(),
-                                "name", request.name(),
-                                "surname", request.surname(),
-                                "birthDate", request.birthDate(),
-                                "sub", sub
-                        ))
-                        .retrieve()
-                        .bodyToMono(UserResponse.class)
-                );
+    public Mono<UserResponse> saveProfile(String sub, String token, UserRegistrationRequest request) {
+        return webClient.post()
+                .uri("/api/users")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .bodyValue(Map.of(
+                        "username", request.username(),
+                        "email", request.email(),
+                        "name", request.name(),
+                        "surname", request.surname(),
+                        "birthDate", request.birthDate(),
+                        "sub", sub
+                ))
+                .retrieve()
+                .bodyToMono(UserResponse.class);
     }
 
 }

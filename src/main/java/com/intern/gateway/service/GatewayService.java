@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 @Service
 public class GatewayService {
@@ -28,16 +30,36 @@ public class GatewayService {
 
     public Mono<UserResponse> registerUser(UserRegistrationRequest request) {
         return keycloakAdminClient.createUser(request)
-                .flatMap(ignored -> keycloakAdminClient.authenticateUser(request.username(), request.password())
-                        .onErrorResume(WebClientResponseException.class, err ->
-                                Mono.error(new PostRegistrationAuthenticationException(err))))
-                .flatMap(token -> userServiceClient.saveProfile(token, request)
-                        .onErrorResume(WebClientResponseException.class, err ->
-                                keycloakAdminClient.rollbackUser(token)
-                                        .then(Mono.error(new UserServiceSaveProfileException(err)))
-                        )
-                );
+                .thenReturn(request)
+                .flatMap(this::fetchUserSubAndToken)
+                .flatMap(tuple -> saveProfileWithRollback(tuple, request))
+                .flatMap(tuple -> addInternalId(tuple, request));
     }
+
+    private Mono<Tuple2<String, String>> fetchUserSubAndToken(UserRegistrationRequest request) {
+        return keycloakAdminClient.getUserSubByUsername(request.username())
+                .zipWith(keycloakAdminClient.getAdminToken());
+    }
+
+    private Mono<Tuple2<UserResponse, String>> saveProfileWithRollback(Tuple2<String, String> tuple, UserRegistrationRequest request) {
+        String userSub = tuple.getT1();
+        String adminToken = tuple.getT2();
+
+        return userServiceClient.saveProfile(userSub, adminToken, request)
+                .onErrorResume(WebClientResponseException.class, err ->
+                        keycloakAdminClient.rollbackUserBySub(userSub)
+                                .then(Mono.error(new UserServiceSaveProfileException(err)))
+                )
+                .map(userResponse -> Tuples.of(userResponse, userSub));
+    }
+
+    private Mono<UserResponse> addInternalId(Tuple2<UserResponse, String> tuple, UserRegistrationRequest request) {
+        UserResponse userResponse = tuple.getT1();
+        String userSub = tuple.getT2();
+
+        return keycloakAdminClient.addInternalId(userResponse, request, userSub);
+    }
+
 
 
     public Mono<LoginResponse> loginUser(UserLoginRequest request) {

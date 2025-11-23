@@ -3,6 +3,7 @@ package com.intern.gateway.controller;
 import com.intern.gateway.dto.LoginResponse;
 import com.intern.gateway.dto.UserLoginRequest;
 import com.intern.gateway.dto.UserRegistrationRequest;
+import com.intern.gateway.dto.UserResponse;
 import com.intern.gateway.service.GatewayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +25,9 @@ public class GatewayController {
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<Void>> register(@RequestBody UserRegistrationRequest request) {
+    public Mono<ResponseEntity<UserResponse>> register(@RequestBody UserRegistrationRequest request) {
         return gatewayService.registerUser(request)
-                .map(saved -> ResponseEntity.ok().build());
+                .map(response -> ResponseEntity.ok().body(response));
     }
 
     @PostMapping("/login")
