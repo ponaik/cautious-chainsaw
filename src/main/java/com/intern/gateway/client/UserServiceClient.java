@@ -21,41 +21,48 @@ import java.util.Map;
 public class UserServiceClient {
 
     private final WebClient webClient;
+    private final AuthenticationClient authClient;
 
     @Autowired
     public UserServiceClient(@Value("${network.user-service.base-url}") String userserviceBaseUrl,
-                             WebClient.Builder builder) {
+                             WebClient.Builder builder,
+                             AuthenticationClient authClient) {
         this.webClient = builder.baseUrl(userserviceBaseUrl).build();
+        this.authClient = authClient;
     }
 
-    public Mono<UserResponse> saveProfile(String sub, String token, UserRegistrationRequest request) {
-        return webClient.post()
-                .uri("/api/users")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .bodyValue(Map.of(
-                        "username", request.username(),
-                        "email", request.email(),
-                        "name", request.name(),
-                        "surname", request.surname(),
-                        "birthDate", request.birthDate(),
-                        "sub", sub
-                ))
-                .retrieve()
-                .bodyToMono(UserResponse.class)
-                .onErrorResume(WebClientResponseException.class, err ->
-                        Mono.error(new UserServiceSaveProfileException(err, sub))
+    public Mono<UserResponse> saveProfile(String sub, UserRegistrationRequest request) {
+        return authClient.authenticateAdminService()
+                .flatMap(token -> webClient.post()
+                        .uri("/api/users")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .bodyValue(Map.of(
+                                "username", request.username(),
+                                "email", request.email(),
+                                "name", request.name(),
+                                "surname", request.surname(),
+                                "birthDate", request.birthDate(),
+                                "sub", sub
+                        ))
+                        .retrieve()
+                        .bodyToMono(UserResponse.class)
+                        .onErrorResume(WebClientResponseException.class, err ->
+                                Mono.error(new UserServiceSaveProfileException(err, sub))
+                        )
                 );
     }
 
-    public Mono<ResponseEntity<Void>> deleteUserById(Long userId, String token) {
-        return webClient.delete()
-                .uri("/api/users/{id}", userId)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .retrieve()
-                .toBodilessEntity()
-                .doOnTerminate(() -> log.debug("Rollback in UserService for userId: {}", userId))
-                .onErrorResume(WebClientResponseException.class, err ->
-                        Mono.error(new UserServiceRollbackException(err, userId))
+    public Mono<ResponseEntity<Void>> deleteUserById(Long userId) {
+        return authClient.authenticateAdminService()
+                .flatMap(token -> webClient.delete()
+                        .uri("/api/users/{id}", userId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .retrieve()
+                        .toBodilessEntity()
+                        .doOnSuccess(ignored -> log.debug("Rollback in UserService for userId: {}", userId))
+                        .onErrorResume(WebClientResponseException.class, err ->
+                                Mono.error(new UserServiceRollbackException(err, userId))
+                        )
                 );
     }
 }

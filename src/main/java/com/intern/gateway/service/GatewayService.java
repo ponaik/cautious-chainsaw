@@ -1,5 +1,6 @@
 package com.intern.gateway.service;
 
+import com.intern.gateway.client.AuthenticationClient;
 import com.intern.gateway.client.KeycloakAdminClient;
 import com.intern.gateway.client.UserServiceClient;
 import com.intern.gateway.dto.LoginResponse;
@@ -24,31 +25,32 @@ public class GatewayService {
 
     private final KeycloakAdminClient keycloakAdminClient;
     private final UserServiceClient userServiceClient;
+    private final AuthenticationClient authClient;
 
     @Autowired
-    public GatewayService(KeycloakAdminClient keycloakAdminClient, UserServiceClient userServiceClient) {
+    public GatewayService(KeycloakAdminClient keycloakAdminClient, UserServiceClient userServiceClient, AuthenticationClient authClient) {
         this.keycloakAdminClient = keycloakAdminClient;
         this.userServiceClient = userServiceClient;
+        this.authClient = authClient;
     }
 
     public Mono<UserResponse> registerUser(UserRegistrationRequest request) {
         return keycloakAdminClient.createUser(request)
-                .flatMap(this::getUserSubAndToken)
-                .flatMap(tuple -> saveUserProfile(tuple, request))
+                .map(this::getSubFromResponse)
+                .flatMap(userSub -> saveUserProfile(userSub, request))
                 .flatMap(tuple -> addKeycloakInternalId(tuple, request))
                 .onErrorResume(this::handleRollbacks);
     }
 
 
     public Mono<LoginResponse> loginUser(UserLoginRequest request) {
-        return keycloakAdminClient.authenticateUser(request.username(), request.password())
+        return authClient.authenticateUser(request.username(), request.password())
                 .map(LoginResponse::new)
                 .onErrorResume(WebClientResponseException.class, err ->
                         Mono.error(new UserAuthenticationException(err)));
     }
 
     private Mono<UserResponse> handleRollbacks(Throwable cause) {
-
         if (cause instanceof RollbackKeycloakRegistration ex) {
             String userSub = ex.getUserSub();
             keycloakAdminClient.deleteUserBySub(userSub)
@@ -56,8 +58,7 @@ public class GatewayService {
         }
         if (cause instanceof RollbackUserRegistration ex) {
             Long userId = ex.getUserId();
-            keycloakAdminClient.getAdminToken()
-                    .flatMap(token -> userServiceClient.deleteUserById(userId, token))
+            userServiceClient.deleteUserById(userId)
                     .subscribe();
         }
 
@@ -73,16 +74,8 @@ public class GatewayService {
         return locationString.substring(locationString.lastIndexOf("/") + 1);
     }
 
-    private Mono<Tuple2<String, String>> getUserSubAndToken(ResponseEntity<Void> response) {
-        return Mono.just(getSubFromResponse(response))
-                .zipWith(keycloakAdminClient.getAdminToken());
-    }
-
-    private Mono<Tuple2<UserResponse, String>> saveUserProfile(Tuple2<String, String> tuple, UserRegistrationRequest request) {
-        String userSub = tuple.getT1();
-        String adminToken = tuple.getT2();
-
-        return userServiceClient.saveProfile(userSub, adminToken, request)
+    private Mono<Tuple2<UserResponse, String>> saveUserProfile(String userSub, UserRegistrationRequest request) {
+        return userServiceClient.saveProfile(userSub, request)
                 .map(userResponse -> Tuples.of(userResponse, userSub));
     }
 
