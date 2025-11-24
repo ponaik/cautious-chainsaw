@@ -44,6 +44,9 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
             details = "\"\"";
             log.error("Unexpected error: {}", ex.getMessage());
         }
+        if (ex instanceof RollbackException) {
+            log.error(ex.getMessage());
+        }
 
         ErrorResponse errorResponse = new ErrorResponse(
                 status,
