@@ -13,21 +13,16 @@ spring:
         webflux:
           routes:
             # UserService routes
-            - id: userservice-users
+            - id: userservice
               uri: ${USERSERVICE_BASEURL}
               predicates:
-                - Path=/api/users/**
-
-            - id: userservice-cards
-              uri: ${USERSERVICE_BASEURL}
-              predicates:
-                - Path=/api/cards/**
+                - Path=/api/users/**,/api/cards/**
 
             # OrderService routes
             - id: orderservice
               uri: ${ORDERSERVICE_BASEURL}
               predicates:
-                - Path=/api/orders/**
+                - Path=/api/orders/**,/api/items/**
 
             - id: orderservice-open-api
               uri: ${ORDERSERVICE_BASEURL}
@@ -35,6 +30,20 @@ spring:
                 - Path=/orders/v3/api-docs
               filters:
                 - StripPrefix=1
+
+            # PaymentService routes
+            - id: paymentservice
+              uri: ${PAYMENTSERVICE_BASEURL}
+              predicates:
+                - Path=/api/payments/**
+
+            - id: paymentservice-open-api
+              uri: ${PAYMENTSERVICE_BASEURL}
+              predicates:
+                - Path=/payments/v3/api-docs
+              filters:
+                - StripPrefix=1
+
 
 swagger-ui:
   oauth:
@@ -52,6 +61,8 @@ springdoc:
         url: /v3/api-docs
       - name: order-service
         url: /orders/v3/api-docs
+      - name: payment-service
+        url: /payments/v3/api-docs
 
 network:
   user-service:
