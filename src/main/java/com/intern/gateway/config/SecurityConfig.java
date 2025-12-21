@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/users/v3/api-docs",
                                 "/payments/v3/api-docs"
                         ).permitAll()
+                        .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/login", "/register").permitAll()
                         .anyExchange().authenticated()
                 )
