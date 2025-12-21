@@ -18,6 +18,13 @@ spring:
               predicates:
                 - Path=/api/users/**,/api/cards/**
 
+            - id: userservice-open-api
+              uri: ${USERSERVICE_BASEURL}
+              predicates:
+                - Path=/users/v3/api-docs
+              filters:
+                - StripPrefix=1
+
             # OrderService routes
             - id: orderservice
               uri: ${ORDERSERVICE_BASEURL}
@@ -50,6 +57,7 @@ swagger-ui:
     issuer-uri: ${OAUTH_ISSUER_URI}
 
 springdoc:
+  show-actuator: false
   api-docs:
     enabled: true
     path: /v3/api-docs
@@ -63,6 +71,8 @@ springdoc:
         url: /orders/v3/api-docs
       - name: payment-service
         url: /payments/v3/api-docs
+      - name: user-service
+        url: /users/v3/api-docs
 
 network:
   user-service:
@@ -89,7 +99,7 @@ server:
   port: 8081
   error:
     include-message: always
-
+  forward-headers-strategy: framework
 
 logging:
   level:
