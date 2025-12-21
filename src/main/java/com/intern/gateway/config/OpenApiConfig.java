@@ -14,10 +14,10 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 @Profile("!test")
-public class SwaggerConfig {
+public class OpenApiConfig {
 
     @Bean
-    public OpenAPI customOpenAPI(@Value("${swagger-ui.oauth.issuer-uri}") String oauthIssuerUri) {
+    public OpenAPI customOpenAPI(@Value("${openapi.oauth.issuer-uri}") String oauthIssuerUri) {
         return new OpenAPI()
                 .info(new Info()
                         .title("Gateway")

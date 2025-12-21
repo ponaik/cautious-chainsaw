@@ -31,7 +31,7 @@
       "description": "Authentication Client Secret for Auth Service."
     },
     {
-      "name": "swagger-ui.oauth.issuer-uri",
+      "name": "openapi.oauth.issuer-uri",
       "type": "java.lang.String",
       "description": "OAuth Issuer URI for Swagger UI."
     }

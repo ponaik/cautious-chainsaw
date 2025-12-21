@@ -52,7 +52,7 @@ spring:
                 - StripPrefix=1
 
 
-swagger-ui:
+openapi:
   oauth:
     issuer-uri: ${OAUTH_ISSUER_URI}
 
