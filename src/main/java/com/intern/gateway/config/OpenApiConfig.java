@@ -22,7 +22,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Gateway")
                         .description("API Gateway Service")
-                        .version("0.0.1-SNAPSHOT"))
+                        .version("1.2.1"))
                 .addSecurityItem(new SecurityRequirement().addList("OAuth2Scheme"))
                 .components(new Components()
                         .addSecuritySchemes("OAuth2Scheme",
