@@ -86,22 +86,48 @@ network:
       id: ${AUTH_CLIENT_ID}
       secret: ${AUTH_CLIENT_SECRET}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    health:
-      show-details: always
-    gateway:
-      access: read-only
-
 server:
   port: 8081
   error:
     include-message: always
   forward-headers-strategy: framework
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus,*"
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      access: read-only
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  otlp:
+    metrics:
+      export:
+        url: "http://localhost:4318/v1/metrics"
+    logging:
+      export:
+        enabled: true
+      endpoint: "http://localhost:4318/v1/logs"
+    tracing:
+      export:
+        enabled: true
+      endpoint: "http://localhost:4318/v1/traces"
+  observations:
+    key-values:
+      application: ${spring.application.name}
+
+#logging:
+#  pattern:
+#    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
 
 logging:
   level:
